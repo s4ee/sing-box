@@ -28,7 +28,7 @@ jobs:
               REPO=SagerNet/sing-box
               REF=dev-next
               ;;
-            puernya)
+            s4ee)
               REPO=s4ee/sing-box
               REF=building
               ;;
