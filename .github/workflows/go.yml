@@ -1,0 +1,191 @@
+name: Sing-Box
+on:
+  workflow_dispatch:
+    inputs:
+      SOURCE:
+        description: "Source ..."
+        required: true
+        default: sagernet
+        type: choice
+        options:
+          - sagernet
+          - qjebbs
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      NAME: sing-box
+      TAGS: with_gvisor,with_quic,with_dhcp,with_ech,with_utls,with_clash_api,with_provider_loadbalance
+    steps:
+      - name: Source
+        id: source
+        run: |
+          SOURCE=${{ github.event.inputs.SOURCE }}
+          REPO=''
+          REF=''
+          case "$SOURCE" in
+            sagernet)
+              REPO=SagerNet/sing-box
+              REF=dev-next
+              ;;
+            qjebbs)
+              REPO=qjebbs/sing-box
+              REF=building
+              ;;
+            *)
+              echo "[!] Unknown ${SOURCE}"
+              exit 1
+              ;;
+          esac
+          echo "repo=$REPO" >> $GITHUB_OUTPUT
+          echo "ref=$REF" >> $GITHUB_OUTPUT
+          echo "SOURCE=$SOURCE" >> $GITHUB_ENV
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Proccess
+        run: |
+          URL_REPO="https://www.github.com/${{ steps.source.outputs.repo }}"
+          BRANCH=${{ steps.source.outputs.ref }}
+          echo "[+] Clone from: ${{ env.SOURCE }}"
+          git clone -b $BRANCH $URL_REPO workdir
+          cd workdir || exit 1
+          HASH_COMMIT=$(git rev-parse --short HEAD)
+          echo "URL_COMMIT=${URL_REPO}/commit/$HASH_COMMIT" >> $GITHUB_ENV
+          git remote add sekai https://www.github.com/SagerNet/sing-box.git
+          git fetch sekai 'refs/tags/*:refs/tags/*'
+          version=$(CGO_ENABLED=0 go run ./cmd/internal/read_tag)
+          echo "[+] readtag version: $version"
+          if [[ "$version" == "unknown" ]]; then
+name: Sing-Box
+on:
+  workflow_dispatch:
+    inputs:
+      SOURCE:
+        description: "Source ..."
+        required: true
+        default: sagernet
+        type: choice
+        options:
+          - sagernet
+          - qjebbs
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      NAME: sing-box
+      TAGS: with_gvisor,with_quic,with_ech,with_utls,with_clash_api,with_provider_loadbalance
+    steps:
+      - name: Source
+        id: source
+        run: |
+          SOURCE=${{ github.event.inputs.SOURCE }}
+          REPO=''
+          REF=''
+          case "$SOURCE" in
+            sagernet)
+              REPO=SagerNet/sing-box
+              REF=dev-next
+              ;;
+            qjebbs)
+              REPO=qjebbs/sing-box
+              REF=building
+              ;;
+            *)
+              echo "[!] Unknown ${SOURCE}"
+              exit 1
+              ;;
+          esac
+          echo "repo=$REPO" >> $GITHUB_OUTPUT
+          echo "ref=$REF" >> $GITHUB_OUTPUT
+          echo "SOURCE=$SOURCE" >> $GITHUB_ENV
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Proccess
+        run: |
+          URL_REPO="https://www.github.com/${{ steps.source.outputs.repo }}"
+          BRANCH=${{ steps.source.outputs.ref }}
+          echo "[+] Clone from: ${{ env.SOURCE }}"
+          git clone -b $BRANCH $URL_REPO workdir
+          cd workdir || exit 1
+          HASH_COMMIT=$(git rev-parse --short HEAD)
+          echo "URL_COMMIT=${URL_REPO}/commit/$HASH_COMMIT" >> $GITHUB_ENV
+          git remote add sekai https://www.github.com/SagerNet/sing-box.git
+          git fetch sekai 'refs/tags/*:refs/tags/*'
+          version=$(CGO_ENABLED=0 go run ./cmd/internal/read_tag)
+          echo "[+] readtag version: $version"
+          if [[ "$version" == "unknown" ]]; then
+          case "${{ env.SOURCE }}" in
+            sagernet) version="SagerNet-${HASH_COMMIT}" ;;
+            qjebbs) version="qjebbs-${HASH_COMMIT}" ;;
+            *)
+              echo "[!] Unknown ${SOURCE}"
+              exit 1
+              ;;
+          esac
+          fi
+          echo "[+] version: $version"
+          VERSION="${version}"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          CC="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang"
+          LDFLAGS="-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -w -s -buildid="
+          CGO_ENABLED=1 CC=${CC} GOARCH=arm64 \
+            GOOS=android go build -trimpath \
+            -tags "${{ env.TAGS }}" -ldflags "${LDFLAGS}" \
+            -o ../${{ env.NAME }} ./cmd/sing-box
+      - name: Install UPX
+        uses: crazy-max/ghaction-upx@v3
+        with:
+          install-only: true
+      - name: Run UPX
+        run: upx --best ./${{ env.NAME }}
+      - name: Archive
+        id: archive
+        run: |
+          GZ="${{ env.NAME }}-android-arm64-cgo-${{ env.VERSION }}.tgz"
+          tar -caf $GZ ./${{ env.NAME }}
+          echo "gz=$GZ" >> $GITHUB_OUTPUT
+          SHA=$(cat $GZ 2>/dev/null | sha256sum | cut -d ' ' -f1)
+          echo "sha=$SHA" >> $GITHUB_OUTPUT
+      - name: SendTo Telegram
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            ${{ env.NAME }}-${{ env.VERSION }}
+
+            Tags: ${{ env.TAGS }}
+
+            Commit: ${{ env.URL_COMMIT }}
+            SHA-Checksum: ${{ steps.archive.outputs.sha }}
+          document: ${{ steps.archive.outputs.gz }}
+: crazy-max/ghaction-upx@v3
+        with:
+          install-only: true
+      - name: Run UPX
+        run: upx --best ./${{ env.NAME }}
+      - name: Archive
+        id: archive
+        run: |
+          GZ="${{ env.NAME }}-android-arm64-cgo-${{ env.VERSION }}.tgz"
+          tar -caf $GZ ./${{ env.NAME }}
+          echo "gz=$GZ" >> $GITHUB_OUTPUT
+          SHA=$(cat $GZ 2>/dev/null | sha256sum | cut -d ' ' -f1)
+          echo "sha=$SHA" >> $GITHUB_OUTPUT
+      - name: SendTo Telegram
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          message: |
+            ${{ env.NAME }}-${{ env.VERSION }}
+
+            Tags: ${{ env.TAGS }}
+
+            Commit: ${{ env.URL_COMMIT }}
+            SHA-Checksum: ${{ steps.archive.outputs.sha }}
+          document: ${{ steps.archive.outputs.gz }}
