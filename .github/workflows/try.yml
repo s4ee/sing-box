@@ -9,7 +9,7 @@ on:
         type: choice
         options:
           - sagernet
-          - s4ee
+          - qjebbs
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -28,8 +28,8 @@ jobs:
               REPO=SagerNet/sing-box
               REF=dev-next
               ;;
-            s4ee)
-              REPO=s4ee/sing-box
+            qjebbs)
+              REPO=qjebbs/sing-box
               REF=building
               ;;
             *)
@@ -88,7 +88,7 @@ jobs:
               REPO=SagerNet/sing-box
               REF=dev-next
               ;;
-            puernya)
+            qjebbs)
               REPO=qjebbs/sing-box
               REF=building
               ;;
