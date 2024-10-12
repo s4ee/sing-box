@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       NAME: sing-box
-      TAGS: with_low_memory,with_gvisor,with_quic,with_dhcp,with_ech,with_utls,with_clash_api,with_provider_loadbalance
+      TAGS: with_gvisor,with_quic,with_dhcp,with_ech,with_utls,with_clash_api,with_provider_loadbalance
     steps:
       - name: Source
         id: source
