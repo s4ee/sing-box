@@ -9,7 +9,7 @@ on:
         type: choice
         options:
           - sagernet
-          - qjebbs
+          - s4ee
 jobs:
   build:
     runs-on: ubuntu-latest
