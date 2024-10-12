@@ -1,105 +1,204 @@
-name: Sing-Box
+name: Debug build
+
 on:
   workflow_dispatch:
     inputs:
-      SOURCE:
-        description: "Source ..."
-        required: true
-        default: sagernet
-        type: choice
-        options:
-          - sagernet
-          - qjebbs
+      tag:
+        description: "The tag version you want to build"
+  push:
+    branches:
+      - stable-next
+      - main-next
+      - dev-next
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+      - '!.github/workflows/debug.yml'
+  pull_request:
+    branches:
+      - stable-next
+      - main-next
+      - dev-next
+
 jobs:
   build:
+    name: Debug build
     runs-on: ubuntu-latest
-    env:
-      NAME: sing-box
-      TAGS: wiith_gvisor,with_quic,with_ech,with_utls,with_clash_api,with_provider_loadbalance
     steps:
-      - name: Source
-        id: source
-        run: |
-          SOURCE=${{ github.event.inputs.SOURCE }}
-          REPO=''
-          REF=''
-          case "$SOURCE" in
-            sagernet)
-              REPO=SagerNet/sing-box
-              REF=dev-next
-              ;;
-            qjebbs)
-              REPO=qjebbs/sing-box
-              REF=building
-              ;;
-            *)
-              echo "[!] Unknown ${SOURCE}"
-              exit 1
-              ;;
-          esac
-          echo "repo=$REPO" >> $GITHUB_OUTPUT
-          echo "ref=$REF" >> $GITHUB_OUTPUT
-          echo "SOURCE=$SOURCE" >> $GITHUB_ENV
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        with:
+          fetch-depth: 0
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: stable
-      - name: Proccess
+          go-version: ^1.21
+        continue-on-error: true
+      - name: Run Test
         run: |
-          URL_REPO="https://www.github.com/${{ steps.source.outputs.repo }}"
-          BRANCH=${{ steps.source.outputs.ref }}
-          echo "[+] Clone from: ${{ env.SOURCE }}"
-          git clone -b $BRANCH $URL_REPO workdir
-          cd workdir || exit 1
-          HASH_COMMIT=$(git rev-parse --short HEAD)
-          echo "URL_COMMIT=${URL_REPO}/commit/$HASH_COMMIT" >> $GITHUB_ENV
-          git remote add sekai https://www.github.com/SagerNet/sing-box.git
-          git fetch sekai 'refs/tags/*:refs/tags/*'
-          version=$(CGO_ENABLED=0 go run ./cmd/internal/read_tag)
-          echo "[+] readtag version: $version"
-          if [[ "$version" == "unknown" ]]; then
-          case "${{ env.SOURCE }}" in
-            sagernet) version="SagerNet-${HASH_COMMIT}" ;;
-            qjebbs) version="qjebbs-${HASH_COMMIT}" ;;
-            *)
-              echo "[!] Unknown ${SOURCE}"
-              exit 1
-              ;;
-          esac
-          fi
-          echo "[+] version: $version"
-          VERSION="${version}"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-          CC="${ANDROID_NDK_HOME}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang"
-          LDFLAGS="-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -w -s -buildid="
-          CGO_ENABLED=1 CC=${CC} GOARCH=arm64 \
-            GOOS=android go build -trimpath \
-            -tags "${{ env.TAGS }}" -ldflags "${LDFLAGS}" \
-            -o ../${{ env.NAME }} ./cmd/sing-box
-      - name: Install UPX
-        uses: crazy-max/ghaction-upx@v3
+          go test -v ./...
+  build_go118:
+    name: Debug build (Go 1.18)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
         with:
-          install-only: true
-      - name: Run UPX
-        run: upx --best ./${{ env.NAME }}
-      - name: Archive
-        id: archive
-        run: |
-          GZ="${{ env.NAME }}-android-arm64-cgo-${{ env.VERSION }}.tgz"
-          tar -caf $GZ ./${{ env.NAME }}
-          echo "gz=$GZ" >> $GITHUB_OUTPUT
-          SHA=$(cat $GZ 2>/dev/null | sha256sum | cut -d ' ' -f1)
-          echo "sha=$SHA" >> $GITHUB_OUTPUT
-      - name: SendTo Telegram
-        uses: appleboy/telegram-action@master
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          to: ${{ secrets.TELEGRAM_TO }}
-          token: ${{ secrets.TELEGRAM_TOKEN }}
-          message: |
-            ${{ env.NAME }}-${{ env.VERSION }}
-
-            Tags: ${{ env.TAGS }}
-
-            Commit: ${{ env.URL_COMMIT }}
-            SHA-Checksum: ${{ steps.archive.outputs.sha }}
-          document: ${{ steps.archive.outputs.gz }}
+          go-version: ~1.18
+      - name: Cache go module
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+          key: go118-${{ hashFiles('**/go.sum') }}
+      - name: Run Test
+        run: make ci_build_go118
+  build_go120:
+    name: Debug build (Go 1.20)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        with:
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ^1.20
+      - name: Cache go module
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+          key: go120-${{ hashFiles('**/go.sum') }}
+      - name: Run Test
+        run: make ci_build
+  cross:
+    strategy:
+      matrix:
+        include:
+          # windows
+          - name: windows-amd64
+            goos: windows
+            goarch: amd64
+            goamd64: v1
+          - name: windows-amd64-v3
+            goos: windows
+            goarch: amd64
+            goamd64: v3
+          - name: windows-386
+            goos: windows
+            goarch: 386
+          - name: windows-arm64
+            goos: windows
+            goarch: arm64
+          - name: windows-arm32v7
+            goos: windows
+            goarch: arm
+            goarm: 7
+          
+          # linux
+          - name: linux-amd64
+            goos: linux
+            goarch: amd64
+            goamd64: v1
+          - name: linux-amd64-v3
+            goos: linux
+            goarch: amd64
+            goamd64: v3
+          - name: linux-386
+            goos: linux
+            goarch: 386
+          - name: linux-arm64
+            goos: linux
+            goarch: arm64
+          - name: linux-armv5
+            goos: linux
+            goarch: arm
+            goarm: 5
+          - name: linux-armv6
+            goos: linux
+            goarch: arm
+            goarm: 6
+          - name: linux-armv7
+            goos: linux
+            goarch: arm
+            goarm: 7
+          - name: linux-mips-softfloat
+            goos: linux
+            goarch: mips
+            gomips: softfloat
+          - name: linux-mips-hardfloat
+            goos: linux
+            goarch: mips
+            gomips: hardfloat
+          - name: linux-mipsel-softfloat
+            goos: linux
+            goarch: mipsle
+            gomips: softfloat
+          - name: linux-mipsel-hardfloat
+            goos: linux
+            goarch: mipsle
+            gomips: hardfloat
+          - name: linux-mips64
+            goos: linux
+            goarch: mips64
+          - name: linux-mips64el
+            goos: linux
+            goarch: mips64le
+          - name: linux-s390x
+            goos: linux
+            goarch: s390x
+          # darwin
+          - name: darwin-amd64
+            goos: darwin
+            goarch: amd64
+            goamd64: v1
+          - name: darwin-amd64-v3
+            goos: darwin
+            goarch: amd64
+            goamd64: v3
+          - name: darwin-arm64
+            goos: darwin
+            goarch: arm64
+          # freebsd
+          - name: freebsd-amd64
+            goos: freebsd
+            goarch: amd64
+            goamd64: v1
+          - name: freebsd-amd64-v3
+            goos: freebsd
+            goarch: amd64
+            goamd64: v3
+          - name: freebsd-386
+            goos: freebsd
+            goarch: 386
+          - name: freebsd-arm64
+            goos: freebsd
+            goarch: arm64
+      fail-fast: true
+    runs-on: ubuntu-latest
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+      GOAMD64: ${{ matrix.goamd64 }}
+      GOARM: ${{ matrix.goarm }}
+      GOMIPS: ${{ matrix.gomips }}
+      CGO_ENABLED: 0
+      TAGS: with_clash_api,with_quic
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
+        with:
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ^1.21
+      - name: Build
+        id: build
+        run: make
