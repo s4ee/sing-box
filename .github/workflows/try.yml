@@ -65,7 +65,7 @@ jobs:
         env:
           CC: ${{steps.setup-ndk.outputs.ndk-path}}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{matrix.jobs.ndk}}-clang
           CX: ${{steps.setup-ndk.outputs.ndk-path}}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{matrix.jobs.ndk}}-clang++
-          TAGS: with_quic,with_gvisor,with_wireguard,with_clash_api,with_provider_loadbalance
+          TAGS: with_quic,with_gvisor,with_wireguard,with_clash_api,with_loadbalance
           GOOS: android
           GOARM: 7
           GOARCH: ${{matrix.jobs.goarch}}
