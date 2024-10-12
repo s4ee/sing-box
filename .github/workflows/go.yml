@@ -70,7 +70,7 @@ jobs:
       - name: build core
         env:
           CC: ${{steps.setup-ndk.outputs.ndk-path}}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{matrix.jobs.ndk}}-clang
-          TAGS: with_quic,with_dhcp,with_ech,with_utls,with_clash_api,with_gvisor
+          TAGS: with_quic,with_dhcp,with_ech,with_utls,with_clash_api,with_gvisor,with_provider_loadbalance
           GOOS: android
           GOARM: '7'
           GOARCH: ${{matrix.jobs.goarch}}
@@ -117,7 +117,7 @@ jobs:
 
       - name: build core
         env:
-          TAGS: with_quic,with_dhcp,with_ech,with_utls,with_clash_api,with_gvisor
+          TAGS: with_quic,with_dhcp,with_ech,with_utls,with_clash_api,with_gvisor,with_provider_loadbalance
           GOARCH: ${{matrix.jobs.goarch}}
           GOAMD64: ${{matrix.jobs.goamd64}}
           CGO_ENABLED: '0'
