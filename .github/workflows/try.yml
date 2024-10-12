@@ -1,0 +1,86 @@
+name: Build Binary Sing-box
+ 
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+ 
+jobs:
+  sing-box:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{steps.sing-box.outputs.version}}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+ 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          check-latest: true
+ 
+      - name: get sing-box version
+        id: sing-box
+        run: |
+          git remote add sekai https://github.com/SagerNet/sing-box.git
+          git fetch --tags sekai
+          version=$(CGO_ENABLED=0 go run ./cmd/internal/read_tag)
+          echo version=$version >> $GITHUB_OUTPUT
+ 
+  android-build:
+    runs-on: ubuntu-latest
+    needs:
+      - sing-box
+    strategy:
+      matrix:
+        jobs:
+          - { goarch: arm, ndk: armv7a-linux-androideabi34, output: armeabi-v7a }
+          - { goarch: arm64, ndk: aarch64-linux-android34, output: arm64-v8a }
+      fail-fast: false
+    env:
+      VERSION: ${{needs.sing-box.outputs.version}}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+ 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          check-latest: true
+ 
+      - name: Setup NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r26d
+ 
+      - name: Install UPX
+        run: sudo apt-get install -y upx
+ 
+      - name: Build binary
+        env:
+          CC: ${{steps.setup-ndk.outputs.ndk-path}}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{matrix.jobs.ndk}}-clang
+          CX: ${{steps.setup-ndk.outputs.ndk-path}}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{matrix.jobs.ndk}}-clang++
+          TAGS: with_quic,with_gvisor,with_wireguard,with_clash_api,with_provider_loadbalance
+          GOOS: android
+          GOARM: 7
+          GOARCH: ${{matrix.jobs.goarch}}
+          CGO_ENABLED: 1
+        run: go build -v -trimpath -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${TAGS}" ./cmd/sing-box
+ 
+      - name: Compress File with UPX
+        run: |
+          upx --best --lzma -o sing-box-${{env.VERSION}}-android-${{matrix.jobs.output}} sing-box
+          mkdir -p bin
+          mv sing-box-${{env.VERSION}}-android-${{matrix.jobs.output}} bin/
+          ls -l bin
+        shell: bash
+ 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sing-box-${{env.VERSION}}-android-${{matrix.jobs.output}}
+          path: bin/
