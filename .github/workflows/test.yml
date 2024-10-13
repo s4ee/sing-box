@@ -73,7 +73,7 @@ jobs:
           GOARM: '7'
           GOARCH: ${{matrix.jobs.goarch}}
           CGO_ENABLED: '1'
-        run: go build -v -trimpath -ldflags "-X 'github.com/s4ee/sing-box/constant.Version=${1.9.7}' -s -w -buildid=" -tags "${with_quic,with_utls,with_clash_api,with_gvisor,with_loadbalance}" ./cmd/sing-box
+        run: go build -v -trimpath -ldflags "-X 'github.com/s4ee/sing-box/constant.Version=${Ver}' -s -w -buildid=" -tags "${with_quic,with_utls,with_clash_api,with_gvisor,with_loadbalance}" ./cmd/sing-box
 
       - name: Remove previous pre-release tag file
         run: |
