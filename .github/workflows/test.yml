@@ -32,8 +32,8 @@ jobs:
       - name: get sing-box version
         id: sing-box
         run: |
-          git remote add qjebbs https://github.com/qjebbs/sing-box
-          git fetch --tags qjebbs
+          git remote add sekai https://github.com/SagerNet/sing-box.git
+          git fetch --tags sekai
           version=$(CGO_ENABLED=0 go run ./cmd/internal/read_tag)
           echo version=$version >> $GITHUB_OUTPUT
 
@@ -73,7 +73,7 @@ jobs:
           GOARM: '7'
           GOARCH: ${{matrix.jobs.goarch}}
           CGO_ENABLED: '1'
-        run: go build -v -trimpath -ldflags "-X 'github.com/qjebbs/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${with_quic,with_utls,with_clash_api,with_gvisor,with_loadbalance}" ./cmd/sing-box
+        run: go build -v -trimpath -ldflags "-X 'github.com/s4ee/sing-box/constant.Version=${1.9.7}' -s -w -buildid=" -tags "${with_quic,with_utls,with_clash_api,with_gvisor,with_loadbalance}" ./cmd/sing-box
 
       - name: Remove previous pre-release tag file
         run: |
@@ -90,44 +90,4 @@ jobs:
           path: |
             sing-box
             sing-box-${{env.VERSION}}-android-${{matrix.jobs.output}}.tag
-          compression-level: 9
-
-  build-other-platform:
-    runs-on: ubuntu-latest
-    needs:
-      - go
-      - sing-box
-    strategy:
-      matrix:
-        jobs:
-          - { goos: linux, goarch: arm64, output: arm64 }
-          - { goos: linux, goarch: arm, goarm: 7, output: armv7 }
-    env:
-      GOOS: ${{matrix.jobs.goos}}
-      VERSION: ${{needs.sing-box.outputs.version}}
-    steps:
-      - uses: actions/checkout@v4.1.1
-        with:
-          fetch-depth: 0
-
-      - name: setup go
-        uses: actions/setup-go@v5.0.0
-        with:
-          go-version: ${{needs.go.outputs.version}}
-
-      - name: build core
-        env:
-          TAGS: with_quic,with_gvisor,with_utls,with_clash_api,with_provider_loadbalance
-          GOARCH: ${{matrix.jobs.goarch}}
-          GOAMD64: ${{matrix.jobs.goamd64}}
-          GOMIPS: ${{matrix.jobs.gomips}}
-          CGO_ENABLED: '0'
-        run: go build -v -trimpath -ldflags "-X 'github.com/qjebbs/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${with_quic,with_utls,with_clash_api,with_gvisor,with_loadbalance}" ./cmd/sing-box
-
-      - name: upload core
-        uses: actions/upload-artifact@v4.1.0
-        with:
-          name: sing-box-${{env.VERSION}}-${{env.GOOS}}-${{matrix.jobs.output}}
-          path: |
-            sing-box
           compression-level: 9
