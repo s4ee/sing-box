@@ -110,17 +110,17 @@ jobs:
       - name: build both-side core
         env:
           TAGS: with_quic,with_dhcp,with_wireguard,with_ech,with_utls,with_acme,with_reality_server,with_clash_api,with_gvisor
-        run: go build -o sing-box-both-side${{ env.SUFFIX }} -v -trimpath -ldflags "${{ matrix.jobs.goarch != 'loong64' && '-checklinkname=0 ' || '' }}-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${TAGS}" ./cmd/sing-box
+        run: go build -o sing-box-both-side${{ env.SUFFIX }} -v -trimpath -ldflags "${{ matrix.jobs.goarch != 'loong64' && '-checklinkname=0 ' || '' }}-X 'github.com/qjebbs/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${with_quic,with_ech,with_utls,with_clash_api,with_gvisor,with_provider_loadbalance}" ./cmd/sing-box
 
       - name: build client core
         env:
           TAGS: with_quic,with_dhcp,with_wireguard,with_ech,with_utls,with_clash_api,with_gvisor
-        run: go build -o sing-box-client${{ env.SUFFIX }} -v -trimpath -ldflags "${{ matrix.jobs.goarch != 'loong64' && '-checklinkname=0 ' || '' }}-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${TAGS}" ./cmd/sing-box
+        run: go build -o sing-box-client${{ env.SUFFIX }} -v -trimpath -ldflags "${{ matrix.jobs.goarch != 'loong64' && '-checklinkname=0 ' || '' }}-X 'github.com/qjebbs/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${with_quic,with_ech,with_utls,with_clash_api,with_gvisor,with_provider_loadbalance}" ./cmd/sing-box
 
       - name: build server core
         env:
           TAGS: with_quic,with_dhcp,with_wireguard,with_ech,with_utls,with_acme,with_reality_server,with_gvisor
-        run: go build -o sing-box-server${{ env.SUFFIX }} -v -trimpath -ldflags "${{ matrix.jobs.goarch != 'loong64' && '-checklinkname=0 ' || '' }}-X 'github.com/sagernet/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${TAGS}" ./cmd/sing-box
+        run: go build -o sing-box-server${{ env.SUFFIX }} -v -trimpath -ldflags "${{ matrix.jobs.goarch != 'loong64' && '-checklinkname=0 ' || '' }}-X 'github.com/qjebbs/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${with_quic,with_ech,with_utls,with_clash_api,with_gvisor,with_provider_loadbalance}" ./cmd/sing-box
 
       - name: upload core
         uses: actions/upload-artifact@v4.1.0
