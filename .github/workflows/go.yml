@@ -75,7 +75,7 @@ jobs:
           GOARM: '7'
           GOARCH: ${{matrix.jobs.goarch}}
           CGO_ENABLED: '1'
-        run: go build -v -trimpath -ldflags "-X 'github.com/qjebbs/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${TAGS}" ./cmd/sing-box
+        run: go build -v -trimpath -ldflags "-X 'github.com/qjebbs/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${TAGS="with_quic,with_ech,with_utls,with_clash_api,with_gvisor,with_provider_loadbalance"}" ./cmd/sing-box
 
       - name: upload core
         uses: actions/upload-artifact@v4.1.0
