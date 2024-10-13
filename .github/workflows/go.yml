@@ -33,7 +33,7 @@ jobs:
         id: sing-box
         run: |
           git remote add qjebbs https://github.com/qjeebs/sing-box.git
-          git fetch --tags qjebbs
+          git fetch --depth=3 qjebbs
           version=$(CGO_ENABLED=0 go run ./cmd/internal/read_tag)
           echo version=$version >> $GITHUB_OUTPUT
 
