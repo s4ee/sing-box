@@ -32,8 +32,8 @@ jobs:
       - name: get sing-box version
         id: sing-box
         run: |
-          git remote add sekai https://github.com/SagerNet/sing-box.git
-          git fetch --tags sekai
+          git remote add qjebbs https://github.com/qjebbs/sing-box
+          git fetch --tags qjebbs
           version=$(CGO_ENABLED=0 go run ./cmd/internal/read_tag)
           echo version=$version >> $GITHUB_OUTPUT
 
@@ -73,7 +73,7 @@ jobs:
           GOARM: '7'
           GOARCH: ${{matrix.jobs.goarch}}
           CGO_ENABLED: '1'
-        run: go build -v -trimpath -ldflags "-X 'github.com/qjebbs/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${with_quic,with_utls,with_clash_api,with_gvisor,with_provider_loadbalance}" ./cmd/sing-box
+        run: go build -v -trimpath -ldflags "-X 'github.com/qjebbs/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${with_quic,with_utls,with_clash_api,with_gvisor,with_loadbalance}" ./cmd/sing-box
 
       - name: Remove previous pre-release tag file
         run: |
@@ -122,7 +122,7 @@ jobs:
           GOAMD64: ${{matrix.jobs.goamd64}}
           GOMIPS: ${{matrix.jobs.gomips}}
           CGO_ENABLED: '0'
-        run: go build -v -trimpath -ldflags "-X 'github.com/qjebbs/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${with_quic,with_utls,with_clash_api,with_gvisor,with_provider_loadbalance}" ./cmd/sing-box
+        run: go build -v -trimpath -ldflags "-X 'github.com/qjebbs/sing-box/constant.Version=${VERSION}' -s -w -buildid=" -tags "${with_quic,with_utls,with_clash_api,with_gvisor,with_loadbalance}" ./cmd/sing-box
 
       - name: upload core
         uses: actions/upload-artifact@v4.1.0
