@@ -33,7 +33,7 @@ jobs:
         id: sing-box
         run: |
           git remote add sekai https://github.com/SagerNet/sing-box.git
-          git fetch --tags 
+          git fetch --tags upstream
           version=$(CGO_ENABLED=0 go run ./cmd/internal/read_tag)
           echo version=$version >> $GITHUB_OUTPUT
 
@@ -68,7 +68,7 @@ jobs:
       - name: build core
         env:
           CC: ${{steps.setup-ndk.outputs.ndk-path}}/toolchains/llvm/prebuilt/linux-x86_64/bin/${{matrix.jobs.ndk}}-clang
-          TAGS: with_quic,with_gvisor,with_utls,with_clash_api,with_outbound_loadbalance
+          TAGS: with_quic,with_gvisor,with_utls,with_clash_api,with_loadbalance
           GOOS: android
           GOARM: '7'
           GOARCH: ${{matrix.jobs.goarch}}
