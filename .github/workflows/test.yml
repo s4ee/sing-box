@@ -33,7 +33,7 @@ jobs:
         id: sing-box
         run: |
           git remote add s4ee https://github.com/s4ee/sing-box.git
-          git fetch --tags upstream
+          git fetch --tags s4ee
           version=$(CGO_ENABLED=0 go run ./cmd/internal/read_tag)
           echo version=$version >> $GITHUB_OUTPUT
 
